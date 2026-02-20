@@ -76,7 +76,7 @@ def handle_send(message):
                 return
         
         if user_id:
-            bot.send_message(user_id, f"📩 පණිවිඩය:\n\n{text_to_send}")
+            bot.send_message(user_id, f"\n\n{text_to_send}")
             bot.reply_to(message, f"✅ පණිවිඩය යොමු කෙරුණා!\n👤 User ID: `{user_id}`")
         else:
             bot.reply_to(message, "❌ User හොයාගන්න බැරි උනා!")
@@ -93,7 +93,7 @@ def handle_admin_reply(message):
             target_user_id = forwarded_map[replied_msg_id]
             
             if message.content_type == 'text':
-                bot.send_message(target_user_id, f"📩 පණිවිඩය:\n\n{message.text}")
+                bot.send_message(target_user_id, f"\n\n{message.text}")
             elif message.content_type == 'photo':
                 bot.send_photo(target_user_id, message.photo[-1].file_id, caption=message.caption)
             elif message.content_type == 'video':
@@ -141,5 +141,5 @@ threading.Thread(target=run_loop, daemon=True).start()
 future = asyncio.run_coroutine_threadsafe(start_client(), loop)
 future.result()  # OTP enter වෙනකන් wait කරනවා
 
-print("බොට් වැඩ කරන්න පටන් ගත්තා...")
+print("Bot Started...")
 bot.infinity_polling()
