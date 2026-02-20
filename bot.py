@@ -14,7 +14,7 @@ def handle_start(message):
 @bot.message_handler(content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker'])
 def forward_to_admin(message):
     # /start වගේ commands forward කරන්නේ නෑ
-    if message.text and message.text.startswith(''):
+    if message.text and message.text.startswith('/'):
         return
     
     try:
