@@ -8,6 +8,13 @@ from telethon import TelegramClient
 API_TOKEN = '7738385271:AAG9KoMEhyGk5iik2hM875Eew0EyiE9LFSI'
 ADMIN_ID = 7335765040
 
+# Admin list - multiple admins support
+ADMIN_IDS = [7335765040]  # අවශ්‍ය නම් තවත් admin ids add කරන්න
+
+# Channel/Group ID - messages forward වෙන්නේ මෙතනට
+# Channel id එක ගන්න: @username_of_channel හෝ -100xxxxxxxxxx format
+CHANNEL_ID = -1002676471906  # ← ඔයාගේ channel/group id දාන්න
+
 API_ID = '38963550'
 API_HASH = '1e7e73506dd3e91f2c513240e701945d'
 PHONE = '+94704608838'
@@ -31,6 +38,9 @@ def save_data(data):
 
 forwarded_map = load_data()
 
+def is_admin(user_id):
+    return user_id in ADMIN_IDS
+
 def get_user_id(identifier):
     async def _get():
         try:
@@ -41,13 +51,19 @@ def get_user_id(identifier):
             return None
     return asyncio.run_coroutine_threadsafe(_get(), loop).result(timeout=15)
 
+# ==================== BOT HANDLERS ====================
+
 @bot.message_handler(commands=['start'])
 def handle_start(message):
+    # Channel/Group messages ignore කරනවා
+    if message.chat.type in ['group', 'supergroup', 'channel']:
+        return
     bot.reply_to(message, "හෙලෝ! ඔබේ පණිවිඩය එවන්න.")
 
+# /send command - admin හෝ channel admin use කරන්න පුළුවන්
 @bot.message_handler(commands=['send'])
 def handle_send(message):
-    if message.chat.id != ADMIN_ID:
+    if not is_admin(message.from_user.id):
         return
     
     try:
@@ -84,7 +100,13 @@ def handle_send(message):
     except Exception as e:
         bot.reply_to(message, f"❌ Error: {e}")
 
-@bot.message_handler(func=lambda message: message.chat.id == ADMIN_ID and message.reply_to_message is not None)
+# Channel/Group ඇතුළෙ admin reply කරනකොට user ට යවනවා
+@bot.message_handler(
+    func=lambda message: (
+        is_admin(message.from_user.id) and 
+        message.reply_to_message is not None
+    )
+)
 def handle_admin_reply(message):
     try:
         replied_msg_id = str(message.reply_to_message.message_id)
@@ -93,6 +115,9 @@ def handle_admin_reply(message):
             target_user_id = forwarded_map[replied_msg_id]
             
             if message.content_type == 'text':
+                # /send command නම් skip කරනවා
+                if message.text.startswith('/'):
+                    return
                 bot.send_message(target_user_id, f"\n\n{message.text}")
             elif message.content_type == 'photo':
                 bot.send_photo(target_user_id, message.photo[-1].file_id, caption=message.caption)
@@ -105,41 +130,49 @@ def handle_admin_reply(message):
             elif message.content_type == 'sticker':
                 bot.send_sticker(target_user_id, message.sticker.file_id)
 
+            
             bot.reply_to(message, "✅ පණිවිඩය සාර්ථකව යොමු කෙරුණා!")
         else:
-            bot.reply_to(message, "❌ User හොයාගන්න බැරි උනා.")
+            bot.reply_to(message, "❌ User හොයාගන්න බැරි උනා. Forward වූ msg එකට reply කරන්න.")
             
     except Exception as e:
+        print(f"Error: {e}")
         bot.reply_to(message, f"❌ Error: {e}")
 
+# User messages -> Channel එකට forward කරනවා
 @bot.message_handler(content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker'])
-def forward_to_admin(message):
+def forward_to_channel(message):
+    # Group/Channel messages ignore
+    if message.chat.type in ['group', 'supergroup', 'channel']:
+        return
     if message.text and message.text.startswith('/'):
         return
     
     try:
-        forwarded = bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
+        # Channel එකට forward කරනවා
+        forwarded = bot.forward_message(CHANNEL_ID, message.chat.id, message.message_id)
+        
+        # Forwarded message id -> user id map කරනවා
         forwarded_map[str(forwarded.message_id)] = message.chat.id
         save_data(forwarded_map)
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Forward error: {e}")
 
-# Telethon setup - sync විදිහට start කරනවා
+# ==================== TELETHON SETUP ====================
+
 async def start_client():
     await client.start(phone=PHONE)
     print("Telethon client started!")
 
-# Thread එකේ loop run කරනවා
 def run_loop():
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
 threading.Thread(target=run_loop, daemon=True).start()
 
-# Client start - OTP handle කරනවා
 future = asyncio.run_coroutine_threadsafe(start_client(), loop)
-future.result()  # OTP enter වෙනකන් wait කරනවා
+future.result()
 
 print("Bot Started...")
 bot.infinity_polling()
