@@ -47,7 +47,7 @@ def handle_admin_reply(message):
         if target_user_id:
             # Admin reply - text, photo, video, document හෝ ඕනෑම content type
             if message.content_type == 'text':
-                bot.send_message(target_user_id, f"📩 පණිවිඩය:\n\n{message.text}")
+                bot.send_message(target_user_id, f{message.text})
             elif message.content_type == 'photo':
                 bot.send_photo(target_user_id, message.photo[-1].file_id, caption=message.caption)
             elif message.content_type == 'video':
