@@ -6,9 +6,9 @@ from telethon.sync import TelegramClient
 API_TOKEN = '7738385271:AAG9KoMEhyGk5iik2hM875Eew0EyiE9LFSI'
 ADMIN_ID = 7335765040
 
-API_ID = 'ඔයාගේ_API_ID'
-API_HASH = 'ඔයාගේ_API_HASH'
-PHONE = '+94xxxxxxxxx'
+API_ID = '38963550'
+API_HASH = '1e7e73506dd3e91f2c513240e701945d'
+PHONE = '+94704608838'
 
 bot = telebot.TeleBot(API_TOKEN)
 client = TelegramClient('session', API_ID, API_HASH)
