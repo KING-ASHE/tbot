@@ -14,7 +14,6 @@ PHONE = '+94704608838'
 
 bot = telebot.TeleBot(API_TOKEN)
 
-# Separate event loop එකක් telethon වලට
 loop = asyncio.new_event_loop()
 client = TelegramClient('session', API_ID, API_HASH, loop=loop)
 
@@ -126,15 +125,21 @@ def forward_to_admin(message):
     except Exception as e:
         print(f"Error: {e}")
 
-# Telethon loop separate thread එකේ run කරනවා
-def run_telethon():
+# Telethon setup - sync විදිහට start කරනවා
+async def start_client():
+    await client.start(phone=PHONE)
+    print("Telethon client started!")
+
+# Thread එකේ loop run කරනවා
+def run_loop():
+    asyncio.set_event_loop(loop)
     loop.run_forever()
 
-threading.Thread(target=run_telethon, daemon=True).start()
+threading.Thread(target=run_loop, daemon=True).start()
 
-# Client start කරනවා
-future = asyncio.run_coroutine_threadsafe(client.start(phone=PHONE), loop)
-future.result()  # OTP wait කරනවා
+# Client start - OTP handle කරනවා
+future = asyncio.run_coroutine_threadsafe(start_client(), loop)
+future.result()  # OTP enter වෙනකන් wait කරනවා
 
 print("බොට් වැඩ කරන්න පටන් ගත්තා...")
 bot.infinity_polling()
