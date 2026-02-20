@@ -22,5 +22,5 @@ def forward_to_admin(message):
     except Exception as e:
         print(f"Error: {e}")
 
-print("බොට් වැඩ කරන්න පටන් ගත්තා...")
+print("Bot Started")
 bot.infinity_polling()
