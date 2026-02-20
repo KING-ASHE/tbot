@@ -8,12 +8,11 @@ from telethon import TelegramClient
 API_TOKEN = '7738385271:AAG9KoMEhyGk5iik2hM875Eew0EyiE9LFSI'
 ADMIN_ID = 7335765040
 
-# Admin list - multiple admins support
-ADMIN_IDS = [7335765040]  # අවශ්‍ය නම් තවත් admin ids add කරන්න
 
-# Channel/Group ID - messages forward වෙන්නේ මෙතනට
-# Channel id එක ගන්න: @username_of_channel හෝ -100xxxxxxxxxx format
-CHANNEL_ID = -1002676471906  # ← ඔයාගේ channel/group id දාන්න
+ADMIN_IDS = [7335765040,1796885357]  
+
+
+CHANNEL_ID = -1003746960301 
 
 API_ID = '38963550'
 API_HASH = '1e7e73506dd3e91f2c513240e701945d'
