@@ -1,7 +1,8 @@
 import telebot
 import json
 import os
-from telethon.sync import TelegramClient
+import asyncio
+from telethon import TelegramClient
 
 API_TOKEN = '7738385271:AAG9KoMEhyGk5iik2hM875Eew0EyiE9LFSI'
 ADMIN_ID = 7335765040
@@ -27,24 +28,26 @@ def save_data(data):
 
 forwarded_map = load_data()
 
-# Username හෝ phone number එකෙන් user id ගන්නවා
-def get_user_id(identifier):
+# Async function එකක් හදලා loop එකෙන් run කරනවා
+async def get_entity_id(identifier):
     try:
-        with client:
-            entity = client.get_entity(identifier)
-            return entity.id
+        entity = await client.get_entity(identifier)
+        return entity.id
     except Exception as e:
         print(f"Get user error: {e}")
         return None
+
+def get_user_id(identifier):
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(get_entity_id(identifier))
+    finally:
+        loop.close()
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     bot.reply_to(message, "හෙලෝ! ඔබේ පණිවිඩය එවන්න.")
 
-# /send - username, phone, හෝ user id තුනෙන් එකක් use කරන්න පුළුවන්
-# /send @username msg
-# /send +94xxxxxxxxx msg  
-# /send 123456789 msg
 @bot.message_handler(commands=['send'])
 def handle_send(message):
     if message.chat.id != ADMIN_ID:
@@ -66,12 +69,14 @@ def handle_send(message):
         
         bot.reply_to(message, "🔍 User හොයනවා...")
 
-        # Number හෝ username නම් Telethon use කරනවා
         if identifier.startswith('@') or identifier.startswith('+'):
             user_id = get_user_id(identifier)
         else:
-            # Direct user id
-            user_id = int(identifier)
+            try:
+                user_id = int(identifier)
+            except ValueError:
+                bot.reply_to(message, "❌ නිවැරදි format:\n/send @username msg\n/send +94xxxxxxxx msg\n/send 123456789 msg")
+                return
         
         if user_id:
             bot.send_message(user_id, f"📩 පණිවිඩය:\n\n{text_to_send}")
@@ -81,7 +86,8 @@ def handle_send(message):
                 "❌ User හොයාගන්න බැරි උනා!\n\n"
                 "කාරණා:\n"
                 "- Username/Number නිවැරදි නෑ\n"
-                "- ඒ user Telegram එකේ නෑ")
+                "- ඒ user Telegram එකේ නෑ\n"
+                "- Phone number නම් contact list එකේ නෑ")
             
     except Exception as e:
         bot.reply_to(message, f"❌ Error: {e}")
@@ -128,5 +134,10 @@ def forward_to_admin(message):
         print(f"Error: {e}")
 
 print("බොට් වැඩ කරන්න පටන් ගත්තා...")
-client.start(phone=PHONE)
+
+# Client start කරනවා - OTP එන්න පුළුවන් first time
+with client:
+    client.loop.run_until_complete(client.start(phone=PHONE))
+    client.loop.run_forever()
+    
 bot.infinity_polling()
