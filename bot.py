@@ -2,6 +2,7 @@ import telebot
 import json
 import os
 import asyncio
+import threading
 from telethon import TelegramClient
 
 API_TOKEN = '7738385271:AAG9KoMEhyGk5iik2hM875Eew0EyiE9LFSI'
@@ -12,7 +13,10 @@ API_HASH = '1e7e73506dd3e91f2c513240e701945d'
 PHONE = '+94704608838'
 
 bot = telebot.TeleBot(API_TOKEN)
-client = TelegramClient('session', API_ID, API_HASH)
+
+# Separate event loop එකක් telethon වලට
+loop = asyncio.new_event_loop()
+client = TelegramClient('session', API_ID, API_HASH, loop=loop)
 
 DATA_FILE = 'user_messages.json'
 
@@ -28,21 +32,15 @@ def save_data(data):
 
 forwarded_map = load_data()
 
-# Async function එකක් හදලා loop එකෙන් run කරනවා
-async def get_entity_id(identifier):
-    try:
-        entity = await client.get_entity(identifier)
-        return entity.id
-    except Exception as e:
-        print(f"Get user error: {e}")
-        return None
-
 def get_user_id(identifier):
-    loop = asyncio.new_event_loop()
-    try:
-        return loop.run_until_complete(get_entity_id(identifier))
-    finally:
-        loop.close()
+    async def _get():
+        try:
+            entity = await client.get_entity(identifier)
+            return entity.id
+        except Exception as e:
+            print(f"Get user error: {e}")
+            return None
+    return asyncio.run_coroutine_threadsafe(_get(), loop).result(timeout=15)
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
@@ -82,12 +80,7 @@ def handle_send(message):
             bot.send_message(user_id, f"📩 පණිවිඩය:\n\n{text_to_send}")
             bot.reply_to(message, f"✅ පණිවිඩය යොමු කෙරුණා!\n👤 User ID: `{user_id}`")
         else:
-            bot.reply_to(message,
-                "❌ User හොයාගන්න බැරි උනා!\n\n"
-                "කාරණා:\n"
-                "- Username/Number නිවැරදි නෑ\n"
-                "- ඒ user Telegram එකේ නෑ\n"
-                "- Phone number නම් contact list එකේ නෑ")
+            bot.reply_to(message, "❌ User හොයාගන්න බැරි උනා!")
             
     except Exception as e:
         bot.reply_to(message, f"❌ Error: {e}")
@@ -133,11 +126,15 @@ def forward_to_admin(message):
     except Exception as e:
         print(f"Error: {e}")
 
-print("බොට් වැඩ කරන්න පටන් ගත්තා...")
+# Telethon loop separate thread එකේ run කරනවා
+def run_telethon():
+    loop.run_forever()
 
-# Client start කරනවා - OTP එන්න පුළුවන් first time
-with client:
-    client.loop.run_until_complete(client.start(phone=PHONE))
-    client.loop.run_forever()
-    
+threading.Thread(target=run_telethon, daemon=True).start()
+
+# Client start කරනවා
+future = asyncio.run_coroutine_threadsafe(client.start(phone=PHONE), loop)
+future.result()  # OTP wait කරනවා
+
+print("බොට් වැඩ කරන්න පටන් ගත්තා...")
 bot.infinity_polling()
