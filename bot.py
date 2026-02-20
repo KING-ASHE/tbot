@@ -130,10 +130,3 @@ def forward_to_admin(message):
 print("බොට් වැඩ කරන්න පටන් ගත්තා...")
 client.start(phone=PHONE)
 bot.infinity_polling()
-```
-
-**දැන් `/send` command එකෙන් 3 විදිහටම යවන්න පුළුවන්:**
-```
-/send @ashen13708 හෙලෝ!        ← username
-/send +94750130230 හෙලෝ!      ← phone number  
-/send 123456789 හෙලෝ!         ← user id
